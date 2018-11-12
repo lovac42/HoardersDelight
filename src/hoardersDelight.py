@@ -2,7 +2,7 @@
 # Copyright: (C) 2018 Lovac42
 # Support: https://github.com/lovac42/HoardersDelight
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
-# Version: 0.0.1
+# Version: 0.0.2
 
 
 # == User Config =========================================
@@ -160,7 +160,7 @@ lim, self.col.usn())
 
 
 
-def rem(self, did, cardsToo=False, childrenToo=True, _old=None):
+def sd_rem(self, did, cardsToo=False, childrenToo=True, _old=None):
     dyn = mw.col.decks.get(did)
     if dyn['name'] != HOARDERS_DECK_NAME:
         return _old(self, did, cardsToo, childrenToo)
@@ -172,6 +172,20 @@ def rem(self, did, cardsToo=False, childrenToo=True, _old=None):
         if did in self.active():
             self.select(int(self.decks.keys()[0]))
         self.save()
+
+
+#Prevent deck menu from deleting the whole deck
+#We are assigning the default deck when the main deck was deleted.
+def sd_logRem(self, ids, type):
+    if type!=2: return #REM_DECK = 2
+    did=ids[0]
+    trashbin=hd.getDynId()
+    cids=mw.col.db.list(
+        "select id from cards where did=? or odid=?", did, did)
+    mw.col.db.executemany("""
+update cards set did=?, odid=1
+where id=?""", ([trashbin,x] for x in cids))
+
 
 
 # In case user changes decks in Browser or other altercations.
@@ -209,6 +223,7 @@ def sd_onDeckConf(self, deck=None, _old=None):
     return _old(self, deck)
 
 
+
 aqt.main.AnkiQt.onDeckConf = wrap(aqt.main.AnkiQt.onDeckConf, sd_onDeckConf, 'around')
 aqt.overview.Overview._desc = wrap(aqt.overview.Overview._desc, desc, 'around')
 anki.sched.Scheduler.emptyDyn = wrap(anki.sched.Scheduler.emptyDyn, sd_emptyDyn, 'around')
@@ -216,7 +231,8 @@ anki.sched.Scheduler.remFromDyn = wrap(anki.sched.Scheduler.remFromDyn, sd_remFr
 anki.sched.Scheduler.rebuildDyn = wrap(anki.sched.Scheduler.rebuildDyn, sd_rebuildDyn, 'around')
 anki.sched.Scheduler.answerCard = wrap(anki.sched.Scheduler.answerCard, sd_answerCard, 'around')
 anki.collection._Collection.remCards = wrap(anki.collection._Collection.remCards, sd_remCards, 'around')
-anki.decks.DeckManager.rem=wrap(anki.decks.DeckManager.rem, rem, 'around')
+anki.collection._Collection._logRem = wrap(anki.collection._Collection._logRem, sd_logRem, 'after')
+anki.decks.DeckManager.rem=wrap(anki.decks.DeckManager.rem, sd_rem, 'around')
 
 if ANKI21:
     import anki.schedv2
