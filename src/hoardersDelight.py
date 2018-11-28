@@ -2,7 +2,7 @@
 # Copyright: (C) 2018 Lovac42
 # Support: https://github.com/lovac42/HoardersDelight
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
-# Version: 0.0.2
+# Version: 0.0.3
 
 
 # == User Config =========================================
@@ -223,7 +223,15 @@ def sd_onDeckConf(self, deck=None, _old=None):
     return _old(self, deck)
 
 
+#For empty cards during db check
+def hd_checkpoint(self, name, _old):
+    if name=="Delete Empty":
+        global PURGE
+        PURGE=True
+    return _old(self, name)
 
+
+aqt.main.AnkiQt.checkpoint = wrap(aqt.main.AnkiQt.checkpoint, hd_checkpoint, 'around')
 aqt.main.AnkiQt.onDeckConf = wrap(aqt.main.AnkiQt.onDeckConf, sd_onDeckConf, 'around')
 aqt.overview.Overview._desc = wrap(aqt.overview.Overview._desc, desc, 'around')
 anki.sched.Scheduler.emptyDyn = wrap(anki.sched.Scheduler.emptyDyn, sd_emptyDyn, 'around')
