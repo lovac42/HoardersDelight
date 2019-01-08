@@ -2,7 +2,7 @@
 # Copyright: (C) 2018 Lovac42
 # Support: https://github.com/lovac42/HoardersDelight
 # License: GNU GPL, version 3 or later; http://www.gnu.org/copyleft/gpl.html
-# Version: 0.0.3
+# Version: 0.0.4
 
 
 # == User Config =========================================
@@ -35,7 +35,7 @@ Learning cards also loose their status."""
 
 
 
-PURGE=False #Used as a flag on 2.1 to access the real _old method.
+PURGE=False #Used as a flag to access the real delete methods.
 
 
 class HoardersDelight:
@@ -191,7 +191,7 @@ where id=?""", ([trashbin,x] for x in cids))
 # In case user changes decks in Browser or other altercations.
 # Since the Deck ID is not given, we are checking each card one by one.
 # This is a taxing process, so we are limiting it to 10 cards max.
-# If more than 10, we are using the first card only.
+# If more than 10, we are use the first card only.
 # Trashbin deck and normal decks should not be mixed.
 def sd_remFromDyn(self, cids, _old):
     if len(cids)>10:
@@ -231,6 +231,14 @@ def hd_checkpoint(self, name, _old):
     return _old(self, name)
 
 
+#For deleting cards from templates
+def hd_remTemplate(self, m, template, _old):
+    global PURGE
+    PURGE=True
+    return _old(self, m, template)
+
+
+
 aqt.main.AnkiQt.checkpoint = wrap(aqt.main.AnkiQt.checkpoint, hd_checkpoint, 'around')
 aqt.main.AnkiQt.onDeckConf = wrap(aqt.main.AnkiQt.onDeckConf, sd_onDeckConf, 'around')
 aqt.overview.Overview._desc = wrap(aqt.overview.Overview._desc, desc, 'around')
@@ -241,6 +249,7 @@ anki.sched.Scheduler.answerCard = wrap(anki.sched.Scheduler.answerCard, sd_answe
 anki.collection._Collection.remCards = wrap(anki.collection._Collection.remCards, sd_remCards, 'around')
 anki.collection._Collection._logRem = wrap(anki.collection._Collection._logRem, sd_logRem, 'after')
 anki.decks.DeckManager.rem=wrap(anki.decks.DeckManager.rem, sd_rem, 'around')
+anki.models.ModelManager.remTemplate=wrap(anki.models.ModelManager.remTemplate, hd_remTemplate, 'around')
 
 if ANKI21:
     import anki.schedv2
